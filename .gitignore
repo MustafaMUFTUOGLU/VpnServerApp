@@ -1,0 +1,11 @@
+.vscode
+.mypy_cache
+docker-stack.yml
+.env
+.idea/*
+venv
+versions
+migrations/versions
+data
+*.pyc
+__pycache__
