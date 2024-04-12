@@ -1,9 +1,9 @@
 import requests
-import socketio
+import socketclient
 
 r = requests.get("http://localhost:8000/test") # server prints "test"
-cl = socketio.Client()
-cl2 = socketio.Client()
+cl = socket.Client()
+cl2 = socket.Client()
 
 
 @cl.on("event_name")

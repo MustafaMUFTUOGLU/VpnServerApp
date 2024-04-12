@@ -1,0 +1,21 @@
+[ req ]
+default_bits       = 2048
+default_md         = sha512
+default_keyfile    = vernemq.key
+prompt             = no
+encrypt_key        = no
+distinguished_name = req_distinguished_name
+
+[ req_distinguished_name ]
+countryName                 = TR
+stateOrProvinceName         = Ankara
+localityName               = Ankara
+organizationName           = didielektronik
+commonName                 = mustafa
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1   = localhost
+IP.1 = 127.0.0.1

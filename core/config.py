@@ -91,6 +91,13 @@ class Settings(BaseSettings):
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
     USERS_OPEN_REGISTRATION: bool = False
 
+    SMTP_DEBUG: str = os.environ.get('SMTP_DEBUG')
+
+    MQTT_URL: str = os.environ.get('MQTT_URL')
+    MQTT_CRT_FILE: str = os.environ.get('MQTT_CRT_FILE')
+    MQTT_USERNAME: str = os.environ.get('MQTT_USERNAME')
+    MQTT_PASSWORD: str = os.environ.get('MQTT_PASSWORD')
+    
     class Config:
         case_sensitive = True
 

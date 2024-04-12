@@ -1,7 +1,16 @@
 import socketio
 
+from api.deps import controlUser
+from db.database import SessionLocal
+
 
 class PublicNamespace(socketio.AsyncNamespace):
+
+    def __init__(self, path, app, sio):
+        super().__init__(path)
+        self.app = app
+        self.sio = sio
+
     async def on_connect(self, sid, environ):
         print("on connect")
         self.sid = sid
@@ -20,15 +29,16 @@ class PublicNamespace(socketio.AsyncNamespace):
 
         print("sendmessage", msg)
 
-    async def login(self, sid, msg):
+    async def on_login(self, sid, msg):
         print(f"login {msg}")
         db = SessionLocal()
         user = controlUser(db, msg)
-        print(f"userid: ", user.uuid);
-        _cluster = MyCustomNamespace(f"/{str(user.uuid)}")
-        cluster[f"{user.uuid}"] = _cluster
-        sio.register_namespace(_cluster)
-        await sio.emit("access", str(user.uuid), room=sid)  # we can send message to specific sid
+        print(f"userid: ", user.uuid)
+        _client = PrivateNamespace(f"/{str(user.uuid)}")
+        self.app.socket_clients[f"{user.uuid}"] = _client
+        self.sio.register_namespace(_client)
+        await self.sio.emit("access", str(user.uuid), room=sid)  # we can send message to specific sid
+
 
 class PrivateNamespace(socketio.AsyncNamespace):
     async def on_connect(self, sid, environ):

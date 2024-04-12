@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 
 import controller
+import models
 import schemas
 from api import deps
 from core import security
@@ -26,6 +27,16 @@ from utils import (
 )
 
 router = APIRouter()
+
+
+@router.post("/verify_token", response_model=schemas.User)
+def verify_token(
+        token_data: schemas.Token,
+        db: Session = Depends(deps.get_db),
+        current_user: models.Users = Depends(deps.get_current_active_user),
+) -> Any:
+    print(token_data, current_user)
+    return current_user
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -58,44 +69,44 @@ def login_access_token(
     else:
         redis_cache.add_to_cache(key=redis_key, value=0, expire=settings.LOGIN_RETRY_TTL)
 
-    m = hashlib.sha1()
-    m.update(login_data.img.encode('utf-8'))
-    hash = m.hexdigest()
+    # m = hashlib.sha1()
+    # m.update(login_data.img.encode('utf-8'))
+    # hash = m.hexdigest()
 
-    redis_check = redis_cache.check_cache(key=hash)
-    if not redis_check or len(redis_check) < 2 or redis_check[1] is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Geçersiz captcha",
-        )
-
-    redis_data = json.loads(redis_check[1].decode('utf-8'))
-
-    if redis_data['captcha'] != login_data.recaptcha:
-        raise HTTPException(
-            status_code=400,
-            detail="Geçersiz captcha",
-        )
+    # redis_check = redis_cache.check_cache(key=hash)
+    # if not redis_check or len(redis_check) < 2 or redis_check[1] is None:
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail="Geçersiz captcha",
+    #     )
+    #
+    # redis_data = json.loads(redis_check[1].decode('utf-8'))
+    #
+    # if redis_data['captcha'] != login_data.recaptcha:
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail="Geçersiz captcha",
+    #     )
 
     user = controller.user.authenticate(db, email=login_data.email, password=login_data.password)
     if not user:
-        print(f'Hatalı Kullanıcı Girişi:{login_data.email}')
+        print(f'Hatali Kullanici Girisi:{login_data.email.encode("utf-8")}')
         raise HTTPException(status_code=400, detail="Hatalı email adresi veya şifre")
     elif not controller.user.is_active(user):
         raise HTTPException(status_code=400, detail="2. aşamaya geçmeye hak kazanamadınız.")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
-        "access_token": security.create_access_token(
+        "api_token": security.create_access_token(
             {
                 "user_uuid": user.uuid,
                 "status": user.status,
                 "email": user.email,
-                "role": user.users_roles[0].roles.name,
+                "role": user.roles.name,
                 "name": user.name,
                 "surname": user.surname
             }, expires_delta=access_token_expires
-        ),
-        "token_type": "bearer",
+        )
+        # "token_type": "bearer",
     }
 
 

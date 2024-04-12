@@ -1,0 +1,2 @@
+[console_scripts]
+husrev = husrev.__main__:main

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, TypeVar, Union, List
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
@@ -36,12 +36,14 @@ class BaseController(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def get_user_id(self, db: Session, user_id: str) -> Optional[ModelType]:
         return db.query(self.model).filter_by(user_id=user_id, second_stage=False).first()
 
-    def get_multi(self, db: Session, *, offset: int = 0, limit: int = 1000, order: Column = None
+    def get_multi(self, db: Session, *, create_user: str , offset: int = 0, limit: int = 1000, order: Column = None
                   ) -> list[tuple[ModelType]]:
         if order:
-            return db.query(self.model).order_by(order).offset(offset * limit).limit(limit).all()
+            return db.query(self.model).filter_by(create_user=create_user).order_by(order).offset(offset * limit).limit(limit).all()
         else:
-            return db.query(self.model).offset(offset * limit).limit(limit).all()
+            return db.query(self.model).filter_by(create_user=create_user).offset(offset * limit).limit(limit).all()
+
+
 
     def get_all(self, db: Session) -> list[tuple[ModelType]]:
         return db.query(self.model).all()
@@ -53,6 +55,21 @@ class BaseController(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.commit()
         db.refresh(db_obj)
         return db_obj
+
+    def create_bulk(self, db: Session, *, obj_in: List[CreateSchemaType]) -> List[ModelType]:
+        obj_in_data = jsonable_encoder(obj_in)
+        db_obj_list = list(
+            map(
+                lambda x: self.model(**x),
+                obj_in_data,
+            )
+        )
+
+        db.add_all(db_obj_list)
+        db.commit()
+        for obj in db_obj_list:
+            db.refresh(obj)
+        return db_obj_list
 
     def update(
             self,
@@ -82,8 +99,8 @@ class BaseController(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.commit()
         return obj
 
-    def delete(self, db: Session, *, id: str) -> ModelType:
-        obj = self.get_uuid(db, id)
+    def delete(self, db: Session, *, uuid: str) -> ModelType:
+        obj = self.get_uuid(db, uuid)
         db.delete(obj)
         db.commit()
         return obj

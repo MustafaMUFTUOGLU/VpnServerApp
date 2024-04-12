@@ -3,6 +3,8 @@ from typing import Optional, Union, List
 from uuid import UUID, uuid4
 from pydantic import BaseModel, EmailStr, Field, validator
 
+import schemas
+
 password_regex = '((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W]).{8,64})'
 
 
@@ -14,6 +16,7 @@ class UserBase(BaseModel):
     create_time: Optional[date]
     last_update_time: Optional[date]
     status: bool = True
+    roles_uuid: Optional[UUID]
 
     class Config:
         orm_mode = True
@@ -33,15 +36,23 @@ class User(UserBase):
     surname: str
     email: Union[EmailStr, str]
     mobile_phone: str = Field(None, max_length=11, min_legnth=10)
-    address: str
-    education_level: str
-    corporation: str
+    # address: str
+    # education_level: str
+    # corporation: str
     failed_password_attempt_count: Optional[int]
     last_login_time: Optional[date]
     login_count_failed: Optional[int]
     user_type: Optional[str]
     groups: Optional[List[str]]
     group_name: Optional[str]
+
+
+class UserList(User):
+    roles: Optional[schemas.RoleBase]
+
+
+class UserListResponse(BaseModel):
+    data: List[UserList]
 
 
 class GroupBase(BaseModel):
@@ -52,25 +63,19 @@ class GroupBase(BaseModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
-    person_national_id: str = Field(None, max_length=11, min_legnth=11)
+    # person_national_id: str = Field(None, max_length=11, min_legnth=11)
     name: str
     surname: str
     email: EmailStr
     mobile_phone: str = Field(None, max_length=11, min_legnth=10)
-    address: str
-    education_level: str
-    corporation: str
     password: Optional[str]
-    role: Optional[str]
 
-    birth_date: date
-
-    @validator("birth_date", pre=True)
-    def parse_birthdate(cls, value):
-        return datetime.strptime(
-            value,
-            "%d-%m-%Y"
-        ).date()
+    # @validator("birth_date", pre=True)
+    # def parse_birthdate(cls, value):
+    #     return datetime.strptime(
+    #         value,
+    #         "%d-%m-%Y"
+    #     ).date()
 
 
 # Properties to receive via API on creation
@@ -127,5 +132,9 @@ class UserDelete(BaseModel):
 class Login(BaseModel):
     email: str
     password: str
-    img: str
-    recaptcha: str
+    # img: str
+    # recaptcha: str
+
+
+class VerifyToken(BaseModel):
+    token: str

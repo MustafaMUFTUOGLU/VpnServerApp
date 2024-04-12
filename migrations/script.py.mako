@@ -20,7 +20,7 @@ from alembic import context
 def upgrade():
     context.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
     schema_upgrades()
-    context.execute("update users set status=false where uuid in (select user_uuid from users_roles ur join roles r on ur.role_uuid = r.uuid where r.name='user');")
+    # context.execute("update users set status=false where uuid in (select user_uuid from users_roles ur join roles r on ur.role_uuid = r.uuid where r.name='user');")
     if context.get_x_argument(as_dictionary=True).get('data', None):
         data_upgrades()
 

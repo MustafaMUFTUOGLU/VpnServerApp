@@ -11,8 +11,6 @@ class Users(Base):
 
     uuid = Column(UUID, primary_key=True, server_default=text("uuid_generate_v4()"))
     name = Column(String, nullable=False)
-    surname = Column(String, nullable=False)
-    email = Column(String, nullable=False)
     mobile_phone = Column(String, nullable=False)
     password = Column(String, nullable=False)
 
@@ -26,7 +24,7 @@ class Users(Base):
     create_user = Column(UUID)
     last_update_user = Column(UUID)
 
-    users_roles = relationship('UsersRoles', back_populates='users')
+    # users_roles = relationship('UsersRoles', back_populates='users')
     group = relationship('Groups', primaryjoin='Users.uuid == Groups.create_user')
 
     devices = relationship('Devices', secondary='devices_users', back_populates='users')

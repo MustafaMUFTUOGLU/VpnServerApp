@@ -20,7 +20,10 @@ class UserController(BaseController[models.Users, schemas.UserCreate, schemas.Us
 
     @staticmethod
     def get_by_username(db: Session, *, email: str) -> Optional[models.Users]:
-        return db.query(models.Users).filter_by(email=email).first()
+
+        aa = db.query(models.Users)
+        bb = aa.filter_by(email=email)
+        return bb.first()
 
     def authenticate(self, db: Session, *, email: str, password: str) -> Optional[models.Users]:
         auth_user = self.get_by_username(db, email=email)
@@ -41,15 +44,15 @@ class UserController(BaseController[models.Users, schemas.UserCreate, schemas.Us
 
     @staticmethod
     def is_superuser(cur_user: models.Users) -> bool:
-        return cur_user.users_roles[0].roles.name == 'admin'
+        return cur_user.roles.name == 'admin'
 
     @staticmethod
     def is_referee(cur_user: models.Users) -> bool:
-        return cur_user.users_roles[0].roles.name == 'referee'
+        return cur_user.roles.name == 'referee'
 
     @staticmethod
     def is_user(cur_user: models.Users) -> bool:
-        return cur_user.users_roles[0].roles.name == 'user'
+        return cur_user.roles.name == 'user'
 
 
 user = UserController(models.Users)

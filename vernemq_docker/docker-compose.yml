@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  gazebo:
+    build: .
+    restart: always
+    ports:
+      - "8883:8883"
+

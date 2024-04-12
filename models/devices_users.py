@@ -5,11 +5,12 @@ from sqlalchemy.orm import relationship
 from db.base_class import Base
 
 
-user_group_association = Table('user_group_association', Base.metadata,
-    Column('user_uuid', Integer, ForeignKey('user.uuid')),
-    Column('device_uuid', Integer, ForeignKey('device.uuid'))
-)
+class DevicesUsers(Base):
+    __tablename__ = 'devices_users'
 
+    uuid = Column(UUID, primary_key=True, server_default=text("uuid_generate_v4()"))
+    user_uuid = Column(ForeignKey('users.uuid'), nullable=False)
+    device_uuid = Column(ForeignKey('devices.uuid'), nullable=False)
 
 # class DeviceUser(Base):
 #     __tablename__ = 'device_user'
@@ -17,4 +18,3 @@ user_group_association = Table('user_group_association', Base.metadata,
 #     user_uuid = Column( ForeignKey('user.uuid'), nullable=False),
 #     device_uuid = Column(  ForeignKey('device.uuid'), nullable=False)
 #
-

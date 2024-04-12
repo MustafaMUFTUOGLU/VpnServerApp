@@ -17,6 +17,24 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
+def controlUser (db, token):
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = schemas.TokenPayload(**payload)
+    except (jwt.JWTError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Kimlik bilgileri doğrulanamadı",
+        )
+
+    usr = controller.user.get(db, id=str(token_data.user_uuid))
+    if not controller.user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    return usr
+
+
 def get_db() -> Generator:
     try:
         db = SessionLocal()
@@ -28,20 +46,7 @@ def get_db() -> Generator:
 def get_current_user(
         db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> models.Users:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-        )
-        token_data = schemas.TokenPayload(**payload)
-    except (jwt.JWTError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Kimlik bilgileri doğrulanamadı",
-        )
-    usr = controller.user.get(db, id=str(token_data.user_uuid))
-    if not controller.user:
-        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
-    return usr
+    return controlUser(db, token)
 
 
 def get_current_active_user(

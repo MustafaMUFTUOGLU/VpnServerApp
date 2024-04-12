@@ -1,0 +1,11 @@
+FROM vernemq/vernemq:latest
+ENV TZ=Europe/Istanbu
+ENV DOCKER_VERNEMQ_ACCEPT_EULA=yes
+COPY ./vernemqssl/vernemq_ca.crt /home/vernemqssl/
+COPY ./vernemqssl/vernemq.crt /home/vernemqssl/
+COPY ./vernemqssl/vernemq.key /home/vernemqssl/
+COPY ./vernemq.conf /vernemq/etc/
+COPY ./vmq.passwd /vernemq/etc/
+
+# EXPOSE 1883
+EXPOSE 8883

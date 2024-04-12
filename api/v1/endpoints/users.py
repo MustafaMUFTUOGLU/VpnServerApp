@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, ValidationError
 
 import controller
 import models
@@ -38,26 +39,33 @@ def group_info(
     return response
 
 
-@router.get("", response_model=List[schemas.User])
+@router.get("", response_model=schemas.UserListResponse)
 def read_users(
         db: Session = Depends(deps.get_db),
-        page: int = 0,
-        limit: int = 1000,
+        page: int = 1,
+        items_per_page: int = 1000,
         current_user: models.Users = Depends(deps.get_current_active_superuser),
 ) -> Any:
     """
     Retrieve referee users.
     """
-    users = controller.user.get_multi(db, offset=page, limit=limit)
-    for user in users:
-        if len(user.group) > 0:
-            user.user_type = 'Grup'
-            user.groups = [f'{x.name} {x.surname}' for x in user.group]
-            user.groups.append(f'{user.name} {user.surname}')
-            user.group_name = user.group[0].group_name
-        else:
-            user.user_type = 'Bireysel'
-    return users
+    users = controller.user.get_multi(db, create_user=current_user.uuid, offset=(page - 1), limit=items_per_page)
+
+    # aa = schemas.UserListResponse.model_validate(users)
+
+    # for user in users:
+    #     if len(user.group) > 0:
+    #         user.user_type = 'Grup'
+    #         user.groups = [f'{x.name} {x.surname}' for x in user.group]
+    #         user.groups.append(f'{user.name} {user.surname}')
+    #         user.group_name = user.group[0].group_name
+    #     else:
+    #         user.user_type = 'Bireysel'
+
+    return {
+        "data": users
+    }
+
 
 
 @router.get("/referee")
@@ -98,30 +106,33 @@ def create_user(
     user_add.create_time = datetime.utcnow()
     user_add.last_update_time = datetime.utcnow()
     user_add.status = True
-    del user_add.role
+
+    # del user_add.role
+
+    # if current_user.roles.name == 'admin':
+    #     get_role = controller.role.find_by_name(db, name='admin')
+    # else:
+    get_role = controller.role.find_by_name(db, name='user')
+
+    user_add.roles_uuid = get_role.uuid
     user = controller.user.create(db, obj_in=user_add)
 
-    if current_user.users_roles[0].roles.name == 'admin':
-        get_role = controller.role.find_by_name(db, name='referee')
-    else:
-        get_role = controller.role.find_by_name(db, name='user')
+    # role = get_role.name
+    #
+    # user_role = UserRoles(
+    #     user_uuid=user.uuid,
+    #     role_uuid=get_role.uuid,
+    #     create_user=current_user.uuid,
+    #     last_update_user=current_user.uuid,
+    # )
+    # controller.user_role.create(
+    #     db, obj_in=user_role
+    # )
 
-    role = get_role.name
-
-    user_role = UserRoles(
-        user_uuid=user.uuid,
-        role_uuid=get_role.uuid,
-        create_user=current_user.uuid,
-        last_update_user=current_user.uuid,
-    )
-    controller.user_role.create(
-        db, obj_in=user_role
-    )
-
-    send_new_account_email(
-        email=user_add.email, name=user_add.name, surname=user_add.surname,
-        role=role, password=password
-    )
+    # send_new_account_email(
+    #     email=user_add.email, name=user_add.name, surname=user_add.surname,
+    #     role=get_role.name, password=password
+    # )
 
     user_add.uuid = user.uuid
     del user_add.password
@@ -175,4 +186,17 @@ def deactivate_user(
     Active or Deactivate a user.
     """
     controller.user.deactivate(db, uuid=user_id)
+    return {'success': True}
+
+
+@router.delete("/{user_id}")
+def delete_user(
+        user_id: str,
+        db: Session = Depends(deps.get_db),
+        current_user: models.Users = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """
+   Delete a user.
+    """
+    controller.user.delete(db, uuid=user_id)
     return {'success': True}

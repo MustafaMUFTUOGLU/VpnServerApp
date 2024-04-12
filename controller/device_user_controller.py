@@ -6,33 +6,47 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from controller.base import BaseController, ModelType
+from typing import Any, List
 from core.security import verify_password
+from schemas import DeviceUserBase
 
 
-class DeviceController(BaseController[models.Devices, schemas.DeviceCreate, schemas.DeviceUpdate]):
+class DeviceUsersController(BaseController[models.DevicesUsers, schemas.DeviceUserBase, schemas.DeviceAddUser]):
 
     def __init__(self, model):
         super().__init__(model)
 
     @staticmethod
-    def get_devices(db: Session, *, current_user: models.Users) -> list[tuple[ModelType]]:
-        return db.query(models.Devices).join(models.DevicesUsers).filter(
-            models.DevicesUsers.user_uuid == current_user.uuid).all()
+    def add_device_users(db: Session, *, current_user: models.Users, device_uuid: str,
+                         users: schemas.DeviceAddUser) -> Any:
+        insert_data = []
+
+        try:
+            for user_uuid in users.users_uuid:
+                kk = {"device_uuid": device_uuid, "user_uuid": user_uuid}
+                insert_data.append(DeviceUserBase(
+                    device_uuid=device_uuid,
+                    user_uuid=user_uuid
+                ))
+
+            print(insert_data)
+            device_users.create_bulk(db, obj_in=insert_data)
+
+        except Exception as e:
+            return False
+        finally:
+            return True
+
 
     @staticmethod
-    def sendmessage_devices(db: Session, *, current_user: models.Users) -> Optional[schemas.DeviceCommand]:
-        return db.query(models.Devices).all()
+    def delete_device_users(db: Session, *, current_user: models.Users, device_uuid: str,
+                         user_uuid: str) -> Any:
 
-    @staticmethod
-    def get_device_by_id(db: Session, *, current_user: models.Users, device_uuid: str) -> Optional[
-        schemas.DeviceBase]:
-        return (db.query(models.Devices)
-                .join(models.DevicesUsers)
-                .join(models.Users)
-                .filter(models.DevicesUsers.user_uuid == current_user.uuid,
-                        models.DevicesUsers.device_uuid == device_uuid)
-                .join(models.Roles)
-                .first())
+        db.query(models.DevicesUsers).filter(models.DevicesUsers.device_uuid == device_uuid,
+                                             models.DevicesUsers.user_uuid == user_uuid).delete()
+        db.commit()
+        return True
 
 
-device = DeviceController(models.Devices)
+
+device_users = DeviceUsersController(models.DevicesUsers)
